@@ -1,0 +1,20 @@
+window:
+  height_px: 80
+  opacity: 0.85
+  background_color: "#000000"
+  position: bottom_center
+
+typography:
+  font_family: "Arial"
+  font_size_px: 20
+  committed_color: "#FFFFFF"
+  partial_color: "#A0A0A0"
+  partial_italic: true
+
+timing:
+  hold_duration_s: 3.0
+  fade_duration_s: 1.0
+
+stability:
+  prefix_lock_threshold: 0.85
+  max_rollback_tokens: 3

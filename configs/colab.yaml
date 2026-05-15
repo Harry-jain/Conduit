@@ -1,0 +1,3 @@
+drive_poll_interval_s: ${oc.env:VOICETRANSLATE_COLAB_POLL_INTERVAL_S,30}
+notebook_path: colab/train_lora.ipynb
+requirements_path: colab/colab_requirements.txt

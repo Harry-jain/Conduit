@@ -1,0 +1,7 @@
+"""Overlay theme constants."""
+
+BACKGROUND_RGBA = (0, 0, 0, 180)
+COMMITTED_COLOR = "#FFFFFF"
+PARTIAL_COLOR = "#A0A0A0"
+FONT_FAMILY = "Arial"
+FONT_SIZE = 20

@@ -1,0 +1,18 @@
+defaults:
+  - languages
+  - audio
+  - models
+  - training
+  - enrollment
+  - overlay
+  - colab
+
+app:
+  name: voicetranslate
+  version: 0.1.0
+  db_path: voicetranslate.db
+
+paths:
+  data_dir: ${oc.env:VOICETRANSLATE_DATA_DIR,./data}
+  models_dir: ${oc.env:VOICETRANSLATE_MODELS_DIR,./models}
+  logs_dir: ${oc.env:VOICETRANSLATE_LOGS_DIR,./logs}

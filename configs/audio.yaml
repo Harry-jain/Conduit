@@ -1,0 +1,34 @@
+microphone:
+  sample_rate: 16000
+  chunk_ms: 32
+  channels: 1
+  dtype: float32
+  exclusive_mode: true
+
+loopback:
+  sample_rate: 48000
+  chunk_ms: 32
+  channels: 2
+  dtype: float32
+
+virtual_mic:
+  sample_rate: 22050
+  buffer_ms: 20
+  channels: 1
+
+vad:
+  threshold: 0.5
+  min_speech_ms: 250
+  min_silence_ms: 300
+  frame_ms: 32
+
+denoiser:
+  enabled: true
+  stationary_noise: true
+  prop_decrease: 0.9
+
+enrollment:
+  min_duration_s: 3.0
+  max_duration_s: 30.0
+  min_snr_db: 15.0
+  max_clipping_pct: 0.01

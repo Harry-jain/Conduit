@@ -1,0 +1,20 @@
+whisper:
+  path: models/whisper/
+  size: base
+  compute_type: int8
+
+nllb:
+  path: models/nllb/
+  model_name: facebook/nllb-200-distilled-600M
+  compute_type: int8
+
+cosyvoice:
+  path: models/cosyvoice/
+  checkpoint: models/lora/latest.safetensors
+
+kokoro:
+  path: models/kokoro/kokoro-v0_19.onnx
+  voice_preset: af_heart
+
+limits:
+  vram_limit_mb: ${oc.env:VOICETRANSLATE_VRAM_LIMIT_MB,3800}

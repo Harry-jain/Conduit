@@ -1,0 +1,44 @@
+supported:
+  - code: en
+    name: English
+    nllb_code: eng_Latn
+    whisper_lang: en
+    tts_supported: true
+  - code: es
+    name: Spanish
+    nllb_code: spa_Latn
+    whisper_lang: es
+    tts_supported: true
+  - code: ja
+    name: Japanese
+    nllb_code: jpn_Jpan
+    whisper_lang: ja
+    tts_supported: true
+  - code: de
+    name: German
+    nllb_code: deu_Latn
+    whisper_lang: de
+    tts_supported: true
+  - code: it
+    name: Italian
+    nllb_code: ita_Latn
+    whisper_lang: it
+    tts_supported: true
+  - code: fr
+    name: French
+    nllb_code: fra_Latn
+    whisper_lang: fr
+    tts_supported: true
+  - code: ru
+    name: Russian
+    nllb_code: rus_Cyrl
+    whisper_lang: ru
+    tts_supported: true
+  - code: hi
+    name: Hindi
+    nllb_code: hin_Deva
+    whisper_lang: hi
+    tts_supported: true
+default_source: en
+default_target: ja
+default_display: en

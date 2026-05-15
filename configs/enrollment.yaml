@@ -1,0 +1,3 @@
+required_sentences: 60
+min_required_for_training: 30
+prompt: "Say this sentence. Say DONE when finished."
