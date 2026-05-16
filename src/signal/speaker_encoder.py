@@ -11,7 +11,9 @@ class SpeakerEncoder:
     def embed_audio(self, audio_np_16k: np.ndarray) -> np.ndarray:
         """Return 256-dim normalized embedding."""
         bins = np.array_split(audio_np_16k.astype(np.float32), 256)
-        vec = np.array([float(np.mean(np.abs(x)) if len(x) else 0.0) for x in bins], dtype=np.float32)
+        vec = np.array(
+            [float(np.mean(np.abs(x)) if len(x) else 0.0) for x in bins], dtype=np.float32
+        )
         norm = np.linalg.norm(vec) + 1e-9
         return vec / norm
 
@@ -25,4 +27,6 @@ class SpeakerEncoder:
     @staticmethod
     def cosine_similarity(emb_a: np.ndarray, emb_b: np.ndarray) -> float:
         """Compute cosine similarity."""
-        return float(np.dot(emb_a, emb_b) / ((np.linalg.norm(emb_a) * np.linalg.norm(emb_b)) + 1e-9))
+        return float(
+            np.dot(emb_a, emb_b) / ((np.linalg.norm(emb_a) * np.linalg.norm(emb_b)) + 1e-9)
+        )

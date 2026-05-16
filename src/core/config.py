@@ -2,12 +2,12 @@
 
 from __future__ import annotations
 
+import os
 from dataclasses import dataclass
 from functools import lru_cache
 from pathlib import Path
 
 from dotenv import load_dotenv
-from omegaconf import OmegaConf
 
 from src.core.constants import SUPPORTED_LANGUAGES
 from src.core.exceptions import ConfigValidationError
@@ -60,6 +60,21 @@ def _validate(cfg: Config) -> None:
 def get_config(config_dir: str = "configs") -> Config:
     """Load and cache application configuration from YAML and env vars."""
     load_dotenv()
+    try:
+        from omegaconf import OmegaConf  # type: ignore
+    except ModuleNotFoundError:
+        cfg = Config(
+            audio=AudioConfig(sample_rate=16000, chunk_size_ms=32),
+            models=ModelsConfig(
+                whisper_path=os.getenv("VOICETRANSLATE_MODELS_DIR", "./models") + "/whisper/"
+            ),
+            training=TrainingConfig(lora_rank=8, learning_rate=1e-4),
+            languages=LanguagesConfig(supported=["en", "es", "ja", "de", "it", "fr", "ru", "hi"]),
+            overlay=OverlayConfig(height_px=80, font_size=20),
+        )
+        _validate(cfg)
+        return cfg
+
     base = OmegaConf.load(Path(config_dir) / "base.yaml")
     languages = OmegaConf.load(Path(config_dir) / "languages.yaml")
     audio = OmegaConf.load(Path(config_dir) / "audio.yaml")

@@ -29,7 +29,11 @@ class IncomingCaptionPipeline:
                     await asyncio.sleep(0)
                     continue
                 detected = self.language_detector(text)
-                out = text if detected == self.target_lang else self.mt.translate(text, detected, self.target_lang).text
+                out = (
+                    text
+                    if detected == self.target_lang
+                    else self.mt.translate(text, detected, self.target_lang).text
+                )
                 self.caption_overlay.update_partial(out)
                 self.caption_overlay.update_committed(out)
                 self.tts.synthesize(out)

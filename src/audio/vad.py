@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import math
 from dataclasses import dataclass
 
 import numpy as np
@@ -26,10 +27,11 @@ class VADDetector:
     ) -> None:
         self.sample_rate = sample_rate
         self.threshold = threshold
-        self.min_speech_frames = max(int(min_speech_duration_ms / 32), 1)
-        self.min_silence_frames = max(int(min_silence_duration_ms / 32), 1)
+        self.min_speech_frames = max(math.ceil(min_speech_duration_ms / 32), 1)
+        self.min_silence_frames = max(math.ceil(min_silence_duration_ms / 32), 1)
         self._speech_frames = 0
         self._silence_frames = 0
+        self._had_speech = False
 
     def process(self, chunk_float32: np.ndarray) -> VADResult:
         """Process one chunk and return speech state."""
@@ -39,13 +41,16 @@ class VADDetector:
         if is_speech:
             self._speech_frames += 1
             self._silence_frames = 0
+            self._had_speech = True
         else:
             self._silence_frames += 1
-        segment_complete = (
-            self._speech_frames >= self.min_speech_frames
-            and self._silence_frames >= self.min_silence_frames
-        )
+        segment_complete = self._had_speech and self._silence_frames >= self.min_silence_frames
         if segment_complete:
             self._speech_frames = 0
             self._silence_frames = 0
-        return VADResult(is_speech=is_speech, probability=probability, segment_complete=segment_complete)
+            self._had_speech = False
+        return VADResult(
+            is_speech=is_speech,
+            probability=probability,
+            segment_complete=segment_complete,
+        )

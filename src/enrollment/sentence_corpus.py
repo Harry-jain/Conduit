@@ -5,7 +5,6 @@ from __future__ import annotations
 import random
 from dataclasses import dataclass, field
 
-
 SENTENCES: list[str] = [
     "The extraordinary complexity of modern artificial intelligence systems requires sophisticated mathematical foundations in linear algebra, calculus, and statistical inference.",
     "Quantum computing architectures leverage superposition and entanglement to solve optimization problems that classical computers cannot address efficiently at industrial scale.",
@@ -67,7 +66,6 @@ SENTENCES: list[str] = [
     "In comparative literature seminars, students analyze allegory, irony, and intertextual resonance alongside sociohistorical context and rhetorical framing techniques.",
     "The renewable energy cooperative tracked inverter efficiency, battery degradation curves, and grid frequency deviations during peak evening demand.",
     "A resilient distributed system requires quorum-based writes, idempotent retries, and explicit backpressure handling to avoid cascading failure modes.",
-    "By documenting acronyms like API, CUDA, and SQL in context, translators preserve technical meaning and reduce ambiguity across languages."
 ]
 
 

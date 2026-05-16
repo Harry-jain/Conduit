@@ -31,7 +31,9 @@ class EnrollmentSessionManager:
         )
         self.conn.commit()
         session_id = int(cur.lastrowid)
-        return SessionState(session_id=session_id, sentences_done=0, total_sentences=60, status="in_progress")
+        return SessionState(
+            session_id=session_id, sentences_done=0, total_sentences=60, status="in_progress"
+        )
 
     def increment(self, session_id: int) -> None:
         """Increment completed sentence count."""

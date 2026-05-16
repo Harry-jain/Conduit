@@ -9,6 +9,7 @@ Conduit is a real-time desktop speech translation and captioning application des
 4. Run `make run`.
 
 See `docs/setup.md` for full setup.
+See `docs/from_scratch_workflow.md` for the exact end-to-end operating method.
 
 ---
 
@@ -343,4 +344,3 @@ To be decided.
 # Notes
 
 This README currently serves as an architectural placeholder and project overview while development is still in early planning and prototyping stages.
-

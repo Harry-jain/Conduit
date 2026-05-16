@@ -86,5 +86,7 @@ class LoRATrainer:
             history.val_loss.append(loss)
             history.mcd_scores.append(compute_mcd(np.array([loss]), np.array([0.0])))
             history.secs_scores.append(max(0.72 + epoch * 0.02, 0.72))
-            history.best_checkpoint = self.checkpoints.save({"model": self.model.state_dict()}, epoch=epoch, step=self.step_count)
+            history.best_checkpoint = self.checkpoints.save(
+                {"model": self.model.state_dict()}, epoch=epoch, step=self.step_count
+            )
         return history

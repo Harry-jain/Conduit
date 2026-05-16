@@ -18,7 +18,9 @@ class CaptionOverlay:
         self.renderer = CaptionRenderer()
         self.widget = QWidget()
         self.widget.setWindowFlags(
-            Qt.WindowType.FramelessWindowHint | Qt.WindowType.WindowStaysOnTopHint | Qt.WindowType.Tool
+            Qt.WindowType.FramelessWindowHint
+            | Qt.WindowType.WindowStaysOnTopHint
+            | Qt.WindowType.Tool
         )
         self.widget.setAttribute(Qt.WidgetAttribute.WA_TransparentForMouseEvents, True)
         self.label = QLabel(self.widget)

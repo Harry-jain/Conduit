@@ -34,7 +34,9 @@ class OutgoingTranslationPipeline:
                 if not tokens:
                     await asyncio.sleep(0)
                     continue
-                translated_tokens = self.mt.translate_stream(tokens, self.source_lang, self.target_lang, k=4)
+                translated_tokens = self.mt.translate_stream(
+                    tokens, self.source_lang, self.target_lang, k=4
+                )
                 text = " ".join(translated_tokens)
                 for audio_chunk in self.tts.synthesize_stream(text):
                     self.virtual_mic.write(audio_chunk)

@@ -18,7 +18,11 @@ class AudioDevice:
 def list_audio_devices() -> list[AudioDevice]:
     """Return all audio devices visible to sounddevice."""
     devices = []
-    for item in sd.query_devices():
+    try:
+        entries = sd.query_devices()
+    except Exception:
+        return devices
+    for item in entries:
         devices.append(
             AudioDevice(
                 name=str(item["name"]),
@@ -28,3 +32,24 @@ def list_audio_devices() -> list[AudioDevice]:
             )
         )
     return devices
+
+
+def list_input_devices() -> list[AudioDevice]:
+    """Return devices that support audio input."""
+    return [dev for dev in list_audio_devices() if dev.max_input_channels > 0]
+
+
+def list_output_devices() -> list[AudioDevice]:
+    """Return devices that support audio output."""
+    return [dev for dev in list_audio_devices() if dev.max_output_channels > 0]
+
+
+def find_device_by_name(name: str) -> AudioDevice | None:
+    """Find first matching device by case-insensitive substring name."""
+    needle = name.strip().lower()
+    if not needle:
+        return None
+    for dev in list_audio_devices():
+        if needle in dev.name.lower():
+            return dev
+    return None

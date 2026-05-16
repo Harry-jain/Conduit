@@ -18,7 +18,7 @@ class HardwareProfile:
     cpu_count: int
 
     @staticmethod
-    def detect() -> "HardwareProfile":
+    def detect() -> HardwareProfile:
         """Detect host hardware profile."""
         if torch.cuda.is_available():
             props = torch.cuda.get_device_properties(0)

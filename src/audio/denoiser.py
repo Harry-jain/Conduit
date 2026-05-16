@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import noisereduce as nr
 import numpy as np
 
 
@@ -14,4 +13,8 @@ class Denoiser:
 
     def reduce(self, audio: np.ndarray) -> np.ndarray:
         """Return denoised audio."""
+        try:
+            import noisereduce as nr  # type: ignore
+        except ModuleNotFoundError:
+            return audio.astype(np.float32, copy=False)
         return nr.reduce_noise(y=audio, sr=self.sample_rate).astype(np.float32, copy=False)

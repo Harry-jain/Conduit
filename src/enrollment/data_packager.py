@@ -6,7 +6,9 @@ from pathlib import Path
 from zipfile import ZIP_DEFLATED, ZipFile
 
 
-def package_training_data(source_dir: str = "data/enrollment", output_zip: str = "data/exports/training_data.zip") -> str:
+def package_training_data(
+    source_dir: str = "data/enrollment", output_zip: str = "data/exports/training_data.zip"
+) -> str:
     """Package enrollment data as zip for Colab upload."""
     src = Path(source_dir)
     out = Path(output_zip)

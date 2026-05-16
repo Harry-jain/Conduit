@@ -8,7 +8,9 @@ from pathlib import Path
 import requests
 
 
-def poll_and_download(url: str, destination: str, interval_s: int = 30, max_checks: int = 10) -> str:
+def poll_and_download(
+    url: str, destination: str, interval_s: int = 30, max_checks: int = 10
+) -> str:
     """Poll URL and download checkpoint when available."""
     dest = Path(destination)
     dest.parent.mkdir(parents=True, exist_ok=True)

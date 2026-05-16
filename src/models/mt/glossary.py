@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-
 DEFAULT_GLOSSARY: dict[str, dict[str, str]] = {
     "en->ja": {"GPU": "GPU", "latency": "レイテンシ"},
     "en->es": {"GPU": "GPU", "latency": "latencia"},
