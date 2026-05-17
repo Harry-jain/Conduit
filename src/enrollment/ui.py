@@ -2,7 +2,9 @@
 
 from __future__ import annotations
 
+import os
 import random
+import time
 from collections.abc import Callable
 from dataclasses import dataclass
 
@@ -18,6 +20,10 @@ from PyQt6.QtWidgets import (
     QVBoxLayout,
     QWidget,
 )
+
+from src.audio.capture import MicrophoneCapture
+from src.audio.vad import VADDetector
+from src.enrollment.keyword_spotter import KeywordSpotter
 
 
 class EnrollmentSignals(QObject):
@@ -93,6 +99,7 @@ class EnrollmentWindow:
         self._current_sentence = ""
         self._recognized_words: list[str] = []
         self._training_prompt_shown = False
+        self._live_wave_samples: np.ndarray = np.zeros((256,), dtype=np.float32)
 
         self.widget = _EnrollmentRoot(self._handle_pause)
         self.widget.setWindowTitle("VoiceTranslate Enrollment")
@@ -185,7 +192,7 @@ class EnrollmentWindow:
     def _record_current_sentence(self) -> None:
         """Record and validate current sentence through recording engine."""
         sentence_index = int(getattr(self.corpus, "current_index", 1))
-        synthetic = np.zeros((16000 * 4,), dtype=np.float32)
+        synthetic = self._capture_sentence_audio()
         result = self.engine.record_sentence(
             sentence_text=self._current_sentence,
             sentence_index=sentence_index,
@@ -224,6 +231,9 @@ class EnrollmentWindow:
 
     def _tick_waveform(self) -> None:
         """Animate waveform at 60 FPS."""
+        if float(np.max(np.abs(self._live_wave_samples))) > 1e-4:
+            self.waveform.set_samples(self._live_wave_samples)
+            return
         t = np.linspace(0, 2 * np.pi, 256, endpoint=False)
         phase = random.random() * 2.0 * np.pi
         noise = (np.random.rand(256).astype(np.float32) - 0.5) * 0.08
@@ -271,3 +281,53 @@ class EnrollmentWindow:
         """Handle pause event on ESC."""
         self._wave_timer.stop()
         self.signals.paused.emit()
+
+    def _capture_sentence_audio(self) -> np.ndarray:
+        """Capture live microphone audio and end on DONE keyword or trailing silence."""
+        sample_rate = int(getattr(self.engine, "sample_rate", 16000))
+        chunk_ms = 32
+        min_s = 3.0
+        max_s = 20.0
+        mic = MicrophoneCapture(
+            device_name=os.getenv("VOICETRANSLATE_MIC_DEVICE") or None,
+            sample_rate=sample_rate,
+            chunk_ms=chunk_ms,
+            exclusive_mode=True,
+        )
+        vad = VADDetector(sample_rate=sample_rate)
+        keyword = KeywordSpotter(keyword="done", confidence_threshold=0.7)
+        keyword.start_listening()
+        chunks: list[np.ndarray] = []
+        start_ts = time.monotonic()
+        min_samples = int(sample_rate * min_s)
+        max_samples = int(sample_rate * max_s)
+        try:
+            mic.start()
+            for chunk in mic.stream():
+                normalized = np.ravel(chunk).astype(np.float32, copy=False)
+                chunks.append(normalized)
+                if len(normalized) >= 256:
+                    self._live_wave_samples = normalized[:256]
+                elif len(normalized) > 0:
+                    padded = np.zeros((256,), dtype=np.float32)
+                    padded[: len(normalized)] = normalized
+                    self._live_wave_samples = padded
+                total = sum(len(c) for c in chunks)
+                if total >= max_samples:
+                    break
+                if total >= min_samples:
+                    vad_result = vad.process(normalized)
+                    if vad_result.segment_complete:
+                        break
+                    keyword_result = keyword.process(normalized)
+                    if keyword_result.keyword_detected:
+                        break
+                if (time.monotonic() - start_ts) > max_s + 1.0:
+                    break
+        finally:
+            mic.stop()
+            self._live_wave_samples = np.zeros((256,), dtype=np.float32)
+        if not chunks:
+            return np.zeros((sample_rate * 3,), dtype=np.float32)
+        merged = np.concatenate(chunks)
+        return merged.astype(np.float32, copy=False)

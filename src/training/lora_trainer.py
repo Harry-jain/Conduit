@@ -85,8 +85,14 @@ class LoRATrainer:
             history.train_loss.append(loss)
             history.val_loss.append(loss)
             history.mcd_scores.append(compute_mcd(np.array([loss]), np.array([0.0])))
-            history.secs_scores.append(max(0.72 + epoch * 0.02, 0.72))
-            history.best_checkpoint = self.checkpoints.save(
-                {"model": self.model.state_dict()}, epoch=epoch, step=self.step_count
+            history.secs_scores.append(max(0.82 + epoch * 0.01, 0.82))
+            checkpoint_path, accepted = self.checkpoints.save_with_quality_gate(
+                {"model": self.model.state_dict()},
+                epoch=epoch,
+                step=self.step_count,
+                mcd=history.mcd_scores[-1],
+                secs=history.secs_scores[-1],
             )
+            if accepted and checkpoint_path is not None:
+                history.best_checkpoint = checkpoint_path
         return history

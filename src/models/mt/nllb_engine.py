@@ -2,11 +2,14 @@
 
 from __future__ import annotations
 
-import os
+import logging
+import time
 from dataclasses import dataclass
 
 from src.core.constants import NLLB_LANG_CODES
 from src.models.mt.glossary import apply_glossary
+
+logger = logging.getLogger(__name__)
 
 
 @dataclass(frozen=True)
@@ -25,18 +28,18 @@ class NLLBTranslator:
         self.device = device
         self.compute_type = compute_type
         self._hf_pipeline: object | None = None
-        if os.getenv("VOICETRANSLATE_ENABLE_REAL_MODELS", "0") == "1":
-            try:
-                from transformers import pipeline  # type: ignore
+        try:
+            from transformers import pipeline  # type: ignore
 
-                dev = 0 if self.device == "cuda" else -1
-                self._hf_pipeline = pipeline(
-                    "translation",
-                    model="facebook/nllb-200-distilled-600M",
-                    device=dev,
-                )
-            except Exception:
-                self._hf_pipeline = None
+            dev = 0 if self.device == "cuda" else -1
+            self._hf_pipeline = pipeline(
+                "translation",
+                model=self.model_path if self.model_path else "facebook/nllb-200-distilled-600M",
+                device=dev,
+            )
+        except (ImportError, OSError, ValueError, RuntimeError) as exc:
+            logger.warning("NLLB pipeline unavailable, using fallback translation: %s", exc)
+            self._hf_pipeline = None
 
     def translate(self, text: str, source_lang: str, target_lang: str) -> TranslationResult:
         """Translate text between supported languages."""
@@ -44,6 +47,7 @@ class NLLBTranslator:
             raise ValueError("Unsupported language code.")
         if source_lang == target_lang:
             return TranslationResult(text=text, latency_ms=1.0)
+        start = time.perf_counter()
         translated = text
         if self._hf_pipeline is not None:
             try:
@@ -55,10 +59,14 @@ class NLLBTranslator:
                 )
                 if output and isinstance(output, list):
                     translated = str(output[0].get("translation_text", translated))
-            except Exception:
-                pass
+            except (OSError, RuntimeError, ValueError, TypeError) as exc:
+                logger.warning("NLLB runtime translation failed, falling back: %s", exc)
         translated = apply_glossary(translated, f"{source_lang}->{target_lang}")
-        return TranslationResult(text=f"[{source_lang}->{target_lang}] {translated}", latency_ms=10.0)
+        latency_ms = (time.perf_counter() - start) * 1000.0
+        return TranslationResult(
+            text=f"[{source_lang}->{target_lang}] {translated}",
+            latency_ms=max(latency_ms, 1.0),
+        )
 
     def translate_stream(
         self, token_stream: list[str], source_lang: str, target_lang: str, k: int = 4

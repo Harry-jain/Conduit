@@ -20,6 +20,15 @@ class KeywordSpotter:
         self.keyword = keyword.lower()
         self.confidence_threshold = confidence_threshold
         self._active = False
+        self._buffer: list[np.ndarray] = []
+        self._sample_rate = 16000
+        self._model: object | None = None
+        try:
+            from faster_whisper import WhisperModel  # type: ignore
+
+            self._model = WhisperModel("tiny", device="cpu", compute_type="int8")
+        except (ImportError, OSError, RuntimeError, ValueError):
+            self._model = None
 
     def start_listening(self) -> None:
         """Enable keyword detection."""
@@ -32,5 +41,27 @@ class KeywordSpotter:
         if isinstance(audio_chunk, str):
             detected = self.keyword in audio_chunk.lower().split()[-3:]
             return KeywordResult(detected, 0.9 if detected else 0.1)
-        energy = float(np.mean(np.abs(audio_chunk)))
-        return KeywordResult(False, min(energy, 1.0))
+        chunk = audio_chunk.astype(np.float32, copy=False)
+        self._buffer.append(chunk)
+        merged = np.concatenate(self._buffer) if self._buffer else chunk
+        if len(merged) >= self._sample_rate and self._model is not None:
+            recent = merged[-self._sample_rate :]
+            try:
+                segments, _ = self._model.transcribe(
+                    recent,
+                    language="en",
+                    beam_size=1,
+                    word_timestamps=False,
+                )
+                text = " ".join([seg.text.strip() for seg in segments]).strip().lower()
+                tail = text.split()[-3:]
+                detected = self.keyword in tail
+                confidence = 0.9 if detected else 0.2
+                if detected and confidence >= self.confidence_threshold:
+                    self._buffer.clear()
+                    return KeywordResult(True, confidence)
+            except (OSError, RuntimeError, ValueError):
+                pass
+            self._buffer = [merged[-self._sample_rate // 2 :]]
+        energy = float(np.mean(np.abs(chunk)))
+        return KeywordResult(False, min(energy * 2.0, 1.0))

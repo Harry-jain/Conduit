@@ -14,6 +14,8 @@ class CheckpointManager:
     """Manage checkpoint files and latest alias."""
 
     checkpoint_dir: str = "models/lora"
+    mcd_threshold: float = 6.0
+    secs_threshold: float = 0.80
 
     def save(self, state: dict, epoch: int, step: int) -> str:
         """Save checkpoint and update latest copy."""
@@ -28,3 +30,17 @@ class CheckpointManager:
     def load(self, path: str) -> dict:
         """Load checkpoint."""
         return torch.load(path, map_location="cpu")
+
+    def save_with_quality_gate(
+        self,
+        state: dict,
+        epoch: int,
+        step: int,
+        mcd: float,
+        secs: float,
+    ) -> tuple[str | None, bool]:
+        """Save checkpoint only when quality metrics pass configured thresholds."""
+        if mcd > self.mcd_threshold or secs < self.secs_threshold:
+            return (None, False)
+        path = self.save(state=state, epoch=epoch, step=step)
+        return (path, True)

@@ -1,11 +1,11 @@
 """Create model directories and prewarm placeholders."""
 
-from src.models.downloader import ensure_model_dirs
+from src.models.downloader import download_required_models
 
 
 def main() -> None:
     """Entrypoint."""
-    ensure_model_dirs()
+    download_required_models()
 
 
 if __name__ == "__main__":

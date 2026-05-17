@@ -66,7 +66,17 @@ class RecordingEngine:
             "mel_path": str(mel_path),
             "accepted": val.accepted,
         }
-        metadata_path.write_text(json.dumps(metadata, indent=2), encoding="utf-8")
+        if metadata_path.exists():
+            try:
+                existing = json.loads(metadata_path.read_text(encoding="utf-8"))
+                if not isinstance(existing, list):
+                    existing = [existing]
+            except json.JSONDecodeError:
+                existing = []
+        else:
+            existing = []
+        existing.append(metadata)
+        metadata_path.write_text(json.dumps(existing, indent=2), encoding="utf-8")
         return RecordingResult(
             audio_np=audio_np,
             duration_s=duration_s,

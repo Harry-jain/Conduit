@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import asyncio
 import os
+import time
 from pathlib import Path
 
 import numpy as np
@@ -13,6 +14,7 @@ from loguru import logger
 from src.audio.capture import MicrophoneCapture
 from src.audio.devices import list_input_devices, list_output_devices
 from src.audio.loopback import SystemLoopbackCapture
+from src.audio.vad import VADDetector
 from src.audio.virtual_mic import VirtualMicWriter
 from src.colab.colab_launcher import open_colab
 from src.colab.notebook_generator import ColabNotebookGenerator
@@ -27,6 +29,7 @@ from src.core.database import (
     upsert_user_config,
 )
 from src.core.logger import setup_logger
+from src.enrollment.keyword_spotter import KeywordSpotter
 from src.enrollment.recording_engine import RecordingEngine
 from src.enrollment.sentence_corpus import SentenceCorpus
 from src.models.asr.whisper_cpu import WhisperCPUTranscriber
@@ -43,6 +46,44 @@ from src.tray.process_manager import ProcessManager
 from src.tray.tray_app import TrayApp
 
 app = typer.Typer(help="VoiceTranslate command line interface.")
+
+
+def _capture_segment_audio(sample_rate: int) -> np.ndarray:
+    """Capture one enrollment segment from the configured microphone."""
+    mic = MicrophoneCapture(
+        device_name=os.getenv("VOICETRANSLATE_MIC_DEVICE") or None,
+        sample_rate=sample_rate,
+        chunk_ms=32,
+        exclusive_mode=True,
+    )
+    vad = VADDetector(sample_rate=sample_rate)
+    keyword = KeywordSpotter(keyword="done", confidence_threshold=0.7)
+    keyword.start_listening()
+    chunks: list[np.ndarray] = []
+    total_samples = 0
+    min_samples = int(sample_rate * 3.0)
+    max_samples = int(sample_rate * 20.0)
+    start_ts = time.monotonic()
+    try:
+        mic.start()
+        for chunk in mic.stream():
+            normalized = chunk.astype(np.float32, copy=False)
+            chunks.append(normalized)
+            total_samples += len(normalized)
+            if total_samples >= max_samples:
+                break
+            if total_samples >= min_samples:
+                if vad.process(normalized).segment_complete:
+                    break
+                if keyword.process(normalized).keyword_detected:
+                    break
+            if (time.monotonic() - start_ts) > 21.0:
+                break
+    finally:
+        mic.stop()
+    if not chunks:
+        return np.zeros((sample_rate * 3,), dtype=np.float32)
+    return np.concatenate(chunks).astype(np.float32, copy=False)
 
 
 @app.command()
@@ -64,9 +105,8 @@ def enroll() -> None:
     logger.info("Enrollment started (mic preference: '{}')", mic_input or "default")
     for index in range(1, corpus.total_count + 1):
         sentence = corpus.next()
-        # Capture integration hook: replace synthetic audio with captured mic segment pipeline.
-        synthetic = np.zeros((16000 * 4,), dtype=np.float32)
-        result = engine.record_sentence(sentence, sentence_index=index, audio_np=synthetic)
+        audio_np = _capture_segment_audio(sample_rate=engine.sample_rate)
+        result = engine.record_sentence(sentence, sentence_index=index, audio_np=audio_np)
         audio_path = f"data/enrollment/segment_{index:03d}.{engine.save_format}"
         mel_path = f"data/enrollment/segment_{index:03d}_mel.npy"
         insert_recording_segment(
@@ -227,10 +267,10 @@ def run_incoming(target_lang: str = "en") -> None:
                 conn,
                 {
                     "pipeline": "incoming",
-                    "e2e_latency_ms": 500.0,
-                    "asr_latency_ms": 150.0,
-                    "mt_latency_ms": 120.0,
-                    "tts_latency_ms": 180.0,
+                    "e2e_latency_ms": pipeline.metrics.e2e_latency_ms,
+                    "asr_latency_ms": pipeline.metrics.asr_latency_ms,
+                    "mt_latency_ms": pipeline.metrics.mt_latency_ms,
+                    "tts_latency_ms": pipeline.metrics.tts_latency_ms,
                     "gpu_temp_c": 45,
                     "vram_used_mb": 3600,
                 },
